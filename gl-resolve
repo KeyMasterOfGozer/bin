@@ -1,0 +1,12 @@
+#!/bin/bash
+
+BuildRoot="$(jq -r '.GL.BuildRoot' ~/Parameters.json)"
+
+OldPath="${PWD}"
+
+cd "${BuildRoot}"
+
+git add .
+git commit -m "Resolved merge conflict by incorporating both."
+
+cd ${OldPath}

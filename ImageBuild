@@ -1,0 +1,5 @@
+#!/bin/bash
+
+ditto -V "/Users/mike/Downloads/imagebuild/images 2" "/Users/mike/Downloads/imagebuild/images"
+
+

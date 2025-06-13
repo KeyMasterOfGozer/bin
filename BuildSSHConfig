@@ -1,0 +1,75 @@
+#!/bin/bash
+
+# Check to make sure parameters are given
+if [ $# -lt 2 ]
+  then
+    echo "Usage: BuildSSHConfig <Trackor UserName> <Trackor Password> <PEM Filename>"
+    exit
+fi
+USERNAME="$1"
+PASSWORD="$2"
+IDENTITYFILE="$3"
+
+# Grab the list of EC2 Servers as JSON from Trackor Site, save to ServerList.json
+curl --header "Content-type: application/json" --request GET "https://$USERNAME:$PASSWORD@trackor.onevizion.com/api/v2/trackor_type/server?filter=G:EC2-SSH-Build&fields=TRACKOR_KEY,EC2_PRIVATE_IP,EC2_PRIVATE_DNS,EC2_CLIENT_TAG" | jq . > ServerList.json
+
+# Transform ServerList.json into a flat PSV(Pipe Seperated Value) file
+jq --raw-output '.[] | "\(.TRACKOR_KEY)|\(.TRACKOR_ID)|\(.EC2_CLIENT_TAG)|\(.EC2_PRIVATE_DNS)|\(.EC2_PRIVATE_IP)"' ServerList.json > ServerList.psv
+
+# Put in a default header if the config file doens't exist
+if [ ! -f ~/.ssh/config ]
+then
+cat <<'EOF' > ~/.ssh/config
+### default for all ###
+Host *
+  ForwardAgent no
+  ForwardX11 no
+  ForwardX11Trusted yes
+  Port 22
+  Protocol 2
+  ServerAliveInterval 60
+  ServerAliveCountMax 30
+
+EOF
+  chmod 700 ~/.ssh/config
+fi
+
+# backup old config file and create stub for new one
+mv ~/.ssh/config ~/.ssh/config.old
+touch ~/.ssh/config
+chmod 700 ~/.ssh/config
+
+# Copy header part from old config file until you get the AutoGen demarker
+while read line; do
+  if [ "### Start Generated Portion ###" == "$line" ]; then
+    break
+  fi
+  echo "$line" >> ~/.ssh/config
+done <~/.ssh/config.old
+
+# Put in the Auto-Gen Demarker
+echo "### Start Generated Portion ###" >> ~/.ssh/config
+echo "" >> ~/.ssh/config
+
+
+# Add block for each Server in the list
+while IFS='|' read -r TRACKOR_KEY TRACKOR_ID EC2_CLIENT_TAG EC2_PRIVATE_DNS EC2_PRIVATE_IP; do
+SHORTNAME=${EC2_PRIVATE_DNS%.ov.internal}
+cat <<EOF >> ~/.ssh/config
+### $EC2_CLIENT_TAG
+Host $SHORTNAME
+  HostName $EC2_PRIVATE_DNS
+  User ec2-user
+  IdentityFile ~/.ssh/${IDENTITYFILE}
+
+EOF
+
+  # Remove the old key(s) from known_hosts
+  ssh-keygen -q -R "${EC2_PRIVATE_DNS}" > /dev/null 2>&1
+  ssh-keygen -q -R "${EC2_PRIVATE_IP}" > /dev/null 2>&1
+
+  # Add the new key(s) to known_hosts
+  ssh-keyscan "${EC2_PRIVATE_DNS}" >> ~/.ssh/known_hosts 2> /dev/null
+
+done < ServerList.psv
+

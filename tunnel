@@ -1,0 +1,48 @@
+#!/bin/bash
+
+TunnelKey="$(jq -r '.JumpConnect.TunnelKey' ~/Parameters.json)"
+TunnelConn="$(jq -r '.JumpConnect.TunnelConn' ~/Parameters.json)"
+
+
+function OpenTunnel {
+	echo $4"=> "$1"->"$2":"$3
+	(ssh -i ~/.ssh/${TunnelKey} -f ${TunnelConn} -N -L $1:$3:$2 \#$4)
+}
+
+function HelpText {
+  echo "Usage:"
+  echo "  tunnel <option>"
+  echo "  <option>"
+  echo "     sprint    - Open Tunnels for Sprint"
+  echo "     mobilitie - Open Tunnels for Mobilitie"
+  echo "     all    - Open Tunnels for all protocols, all ports"
+  echo "     list   - List Open Tunnels"
+  echo "     kill   - Kill any Open Tunnels"
+  echo ""
+  echo " Uses csv data file "tunnel-list" to know list of ports to open"
+  echo " Example:"
+  echo "  <group name>,<port>,<ipaddress>,<Description>"
+  echo "  mobilitie,2290,22,app01.mob-ext.ov.internal,Mobilitie Dev App01 SSH"
+  echo "  mobilitie,2291,22,web01.mob-ext.ov.internal,Mobilitie Dev Web01 SSH"
+}
+
+if [ $# = 0 ]; then
+  HelpText
+elif [ "$1" = "help" ] || [ "$1" = "-help" ] || [ "$1" = "?" ] || [ "$1" = "-?" ]
+then
+  HelpText
+elif [ "$1" = "list" ]
+then
+  ps -ef | grep -e 'ssh -i /Users/mike' | grep -v grep | awk '{print $2 " => " $15 " " $16 " " $17 " " $18 " " $19 " " $20}'
+elif [ "$1" = "kill" ]
+then
+  ps -ef | grep -e 'ssh -i /Users/mike' | grep -v grep | awk '{print $2}' | xargs kill -9  2> /dev/null
+else
+  while IFS=, read -r TYPE LPORT RPORT RSERVER DESC; do
+    if [ "$1" = "$TYPE" ] || [ "$1" = "all" ]; then
+      if [ ${1:0:1} != "#" ]; then
+        OpenTunnel $LPORT $RPORT $RSERVER "$DESC"
+      fi
+    fi
+  done < /Users/mike/bin/tunnel-list
+fi

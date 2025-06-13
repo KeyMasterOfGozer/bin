@@ -1,0 +1,27 @@
+#!/bin/bash
+
+BuildRoot="$(jq -r '.GL.BuildRoot' ~/Parameters.json)"
+MasterRepo="$(jq -r '.GL.MasterRepo' ~/Parameters.json)"
+
+OldPath="${PWD}"
+
+cd "${BuildRoot}"
+
+echo ""
+
+echo "Syncing BuildRepo master with MasterRepo master"
+echo "-----------------------------------------------"
+git checkout master
+git pull ${MasterRepo} master
+git push origin master
+
+echo ""
+echo ""
+
+echo "Syncing BuildRepo dev with BuildRepo master"
+echo "-----------------------------------------------"
+git checkout dev
+git merge master --no-edit
+git push
+
+echo ""

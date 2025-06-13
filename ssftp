@@ -1,0 +1,15 @@
+#!/bin/bash
+JumpBox="$(jq -r '.JumpConnect.JumpBox' ~/Parameters.json)"
+SSHKey="$(jq -r '.JumpConnect.SSHKey' ~/Parameters.json)"
+AltJumpBox="$(jq -r '.JumpConnect.AltJumpBox' ~/Parameters.json)"
+AltSSHKey="$(jq -r '.JumpConnect.AltSSHKey' ~/Parameters.json)"
+AltIdent="$(jq -r '.JumpConnect.AltIdent' ~/Parameters.json)"
+
+Target=${1}
+
+if [[ ${Target} =~ "${AltIdent}" ]]; then
+    JumpBox="${AltJumpBox}"
+    SSHKey="${AltSSHKey}"
+fi
+
+sftp -i /Users/mike/.ssh/${SSHKey} -o ProxyCommand="ssh -W %h:%p ${JumpBox}" ec2-user@${Target}.ov.internal

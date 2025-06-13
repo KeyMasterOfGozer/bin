@@ -1,0 +1,8 @@
+BuildRoot="$(jq -r '.GL.BuildRoot' ~/Parameters.json)"
+InstallRoot="$(jq -r '.GL.InstallRoot' ~/Parameters.json)"
+ExeFile="$(jq -r '.GL.ExeFile' ~/Parameters.json)"
+
+${BuildRoot}/tools/txtmerge.py ${BuildRoot}/locations ${BuildRoot}/glife.txt
+${BuildRoot}/tools/txt2gam.mac ${BuildRoot}/glife.txt ${BuildRoot}/${ExeFile}
+cp ${BuildRoot}/${ExeFile} "${InstallRoot}"
+

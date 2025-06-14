@@ -12,4 +12,4 @@ if [[ ${Target} =~ "${AltIdent}" ]]; then
     SSHKey="${AltSSHKey}"
 fi
 
-ssh ec2-user@${Target}.ov.internal -i /Users/mike/.ssh/${SSHKey} -o ProxyCommand="ssh -W %h:%p ${JumpBox}"
+ssh ec2-user@${Target}.ov.internal -i ${SSHKey} -o ProxyCommand="ssh -W %h:%p ${JumpBox}"

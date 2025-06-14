@@ -2,11 +2,11 @@
 
 TunnelKey="$(jq -r '.JumpConnect.TunnelKey' ~/Parameters.json)"
 TunnelConn="$(jq -r '.JumpConnect.TunnelConn' ~/Parameters.json)"
-
+TunnelFolder="$(which tunnel)"
 
 function OpenTunnel {
 	echo $4"=> "$1"->"$2":"$3
-	(ssh -i ~/.ssh/${TunnelKey} -f ${TunnelConn} -N -L $1:$3:$2 \#$4)
+	(ssh -i ${TunnelKey} -f ${TunnelConn} -N -L $1:$3:$2 \#$4)
 }
 
 function HelpText {
@@ -33,10 +33,10 @@ then
   HelpText
 elif [ "$1" = "list" ]
 then
-  ps -ef | grep -e 'ssh -i /Users/mike' | grep -v grep | awk '{print $2 " => " $15 " " $16 " " $17 " " $18 " " $19 " " $20}'
+  ps -ef | grep -e 'ssh -i ${TunnelKey}' | grep -v grep | awk '{print $2 " => " $15 " " $16 " " $17 " " $18 " " $19 " " $20}'
 elif [ "$1" = "kill" ]
 then
-  ps -ef | grep -e 'ssh -i /Users/mike' | grep -v grep | awk '{print $2}' | xargs kill -9  2> /dev/null
+  ps -ef | grep -e 'ssh -i ${TunnelKey}' | grep -v grep | awk '{print $2}' | xargs kill -9  2> /dev/null
 else
   while IFS=, read -r TYPE LPORT RPORT RSERVER DESC; do
     if [ "$1" = "$TYPE" ] || [ "$1" = "all" ]; then
@@ -44,5 +44,5 @@ else
         OpenTunnel $LPORT $RPORT $RSERVER "$DESC"
       fi
     fi
-  done < /Users/mike/bin/tunnel-list
+  done < ${TunnelFolder}-list
 fi

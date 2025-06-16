@@ -1,4 +1,5 @@
 #!/bin/bash
+trap 'pkill -f "caffeinate -d"' EXIT
 caffeinate -d &
 while true;
 do

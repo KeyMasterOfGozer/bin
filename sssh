@@ -1,15 +1,18 @@
 #!/bin/bash
-JumpBox="$(jq -r '.JumpConnect.JumpBox' ~/Parameters.json)"
-SSHKey="$(jq -r '.JumpConnect.SSHKey' ~/Parameters.json)"
-AltJumpBox="$(jq -r '.JumpConnect.AltJumpBox' ~/Parameters.json)"
-AltSSHKey="$(jq -r '.JumpConnect.AltSSHKey' ~/Parameters.json)"
-AltIdent="$(jq -r '.JumpConnect.AltIdent' ~/Parameters.json)"
 
 Target=${1}
+RegionID="us-east-1"
 
-if [[ ${Target} =~ "${AltIdent}" ]]; then
-    JumpBox="${AltJumpBox}"
-    SSHKey="${AltSSHKey}"
+if [[ ${Target} =~ "rogers" ]]; then
+    RegionID="ca-central-1"
+fi
+if [[ ${Target} =~ "sielvizion" ]]; then
+    RegionID="ap-south-1"
+fi
+if [[ ${Target} =~ "sbaintl" ]]; then
+    RegionID="sa-east-1"
 fi
 
-ssh ec2-user@${Target}.ov.internal -i ${SSHKey} -o ProxyCommand="ssh -W %h:%p ${JumpBox}"
+InstanceID="$(aws ec2 describe-instances --region ${RegionID} --filters "Name=tag:Name,Values=${Target}" --query 'Reservations[*].Instances[*].[InstanceId]' --output text)"
+
+ssh ec2-user@${Target} -o ProxyCommand="aws ssm start-session --target ${InstanceID} --document-name AWS-StartSSHSession --parameters 'portNumber=%p' --region ${RegionID}"

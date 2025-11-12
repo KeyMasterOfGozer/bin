@@ -1,0 +1,2 @@
+
+sudo rsync -rP --size-only "/Volumes/Media/" "$1"
